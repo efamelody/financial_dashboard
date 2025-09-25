@@ -12,59 +12,73 @@ import {
 } from "recharts";
 
 function App() {
+  const [ticker, setTicker] = useState("AAPL"); // default ticker
   const [data, setData] = useState([]);
-  const [selectedFields, setSelectedFields] = useState(["Close"]); // default show Close
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    axios.get("http://localhost:5000/api/stock/AAPL")
-      .then(res => {
-        const rawData = res.data.history;
-  
-        // 🔄 Transform keys to simpler names
-        const cleaned = rawData.map(item => ({
-          Date: item["('Date', '')"],
-          Open: item["('Open', 'AAPL')"],
-          High: item["('High', 'AAPL')"],
-          Low: item["('Low', 'AAPL')"],
-          Close: item["('Close', 'AAPL')"],
-          Volume: item["('Volume', 'AAPL')"]
-        }));
-  
-        setData(cleaned);
-      })
-      .catch(err => {
-        console.error("Error fetching data:", err);
-      });
-  }, []);
-  
+  const [selectedFields, setSelectedFields] = useState(["Close"]); // ✅ Default to Close
 
+  const stockOptions = ["AAPL", "MSFT", "TSLA", "GOOGL", "AMZN"];
+
+  //  Toggle handler
   const toggleField = (field) => {
     setSelectedFields((prev) =>
-      prev.includes(field) ? prev.filter(f => f !== field) : [...prev, field]
+      prev.includes(field) ? prev.filter((f) => f !== field) : [...prev, field]
     );
   };
 
+  // Fetch stock data
+  const fetchData = async (symbol) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const res = await axios.get(`http://localhost:5000/api/stock/${symbol}`);
+      const rawData = res.data.history;
+
+      const cleaned = rawData.map((item) => ({
+        Date: item["('Date', '')"],
+        Open: item[`('Open', '${symbol}')`],
+        High: item[`('High', '${symbol}')`],
+        Low: item[`('Low', '${symbol}')`],
+        Close: item[`('Close', '${symbol}')`],
+        Volume: item[`('Volume', '${symbol}')`],
+      }));
+
+      setData(cleaned);
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      setError("Failed to fetch data.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData(ticker);
+  }, [ticker]);
+
   return (
     <div style={{ padding: "20px" }}>
-      <h1>📈 Financial Dashboard</h1>
-      <h2>Apple (AAPL) Stock Data</h2>
+      <h1> Financial Dashboard</h1>
 
-      {/* Info card */}
-      <div style={{ marginBottom: "20px", padding: "10px", background: "#f9f9f9", borderRadius: "8px" }}>
-        <h3>📘 What does this chart mean?</h3>
-        <p>
-          Stock prices have several values each day:
-          <br />
-          <b>Open</b> = first price of the day | 
-          <b> High</b> = highest price | 
-          <b> Low</b> = lowest price | 
-          <b> Close</b> = final price when market closed | 
-          <b> Volume</b> = number of shares traded
-        </p>
-      </div>
+      {/* Dropdown for stock selection */}
+      <label style={{ marginRight: "10px" }}>Select Stock:</label>
+      <select
+        value={ticker}
+        onChange={(e) => setTicker(e.target.value)}
+        style={{ padding: "8px", fontSize: "16px" }}
+      >
+        {stockOptions.map((symbol) => (
+          <option key={symbol} value={symbol}>
+            {symbol}
+          </option>
+        ))}
+      </select>
 
       {/* Toggle buttons */}
-      <div style={{ marginBottom: "20px" }}>
+      <div style={{ margin: "20px 0" }}>
         {["Open", "High", "Low", "Close", "Volume"].map((field) => (
           <button
             key={field}
@@ -73,32 +87,49 @@ function App() {
               marginRight: "10px",
               padding: "8px 12px",
               borderRadius: "6px",
-              border: selectedFields.includes(field) ? "2px solid #8884d8" : "1px solid #ccc",
+              border: selectedFields.includes(field)
+                ? "2px solid #8884d8"
+                : "1px solid #ccc",
               background: selectedFields.includes(field) ? "#eee" : "white",
-              cursor: "pointer"
+              cursor: "pointer",
             }}
           >
-            {selectedFields.includes(field) ? `✅ ${field}` : field}
+            {selectedFields.includes(field) ? ` ${field}` : field}
           </button>
         ))}
       </div>
 
-      {/* Chart */}
-      <ResponsiveContainer width="100%" height={400}>
-        <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="Date" />
-          <YAxis />
-          <Tooltip />
-          <Legend />
+      <h2>{ticker} Stock Prices</h2>
 
-          {selectedFields.includes("Open") && <Line type="monotone" dataKey="Open" stroke="#8884d8" />}
-          {selectedFields.includes("High") && <Line type="monotone" dataKey="High" stroke="#82ca9d" />}
-          {selectedFields.includes("Low") && <Line type="monotone" dataKey="Low" stroke="#ff7300" />}
-          {selectedFields.includes("Close") && <Line type="monotone" dataKey="Close" stroke="#387908" />}
-          {selectedFields.includes("Volume") && <Line type="monotone" dataKey="Volume" stroke="#ff0000" />}
-        </LineChart>
-      </ResponsiveContainer>
+      {loading && <p>Loading...</p>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
+
+      {!loading && data.length > 0 && (
+        <ResponsiveContainer width="100%" height={400}>
+          <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="Date" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            {selectedFields.includes("Close") && (
+              <Line type="monotone" dataKey="Close" stroke="#8884d8" dot={false} />
+            )}
+            {selectedFields.includes("Open") && (
+              <Line type="monotone" dataKey="Open" stroke="#82ca9d" dot={false} />
+            )}
+            {selectedFields.includes("High") && (
+              <Line type="monotone" dataKey="High" stroke="#ff7300" dot={false} />
+            )}
+            {selectedFields.includes("Low") && (
+              <Line type="monotone" dataKey="Low" stroke="#387908" dot={false} />
+            )}
+            {selectedFields.includes("Volume") && (
+              <Line type="monotone" dataKey="Volume" stroke="#000000" dot={false} />
+            )}
+          </LineChart>
+        </ResponsiveContainer>
+      )}
     </div>
   );
 }
