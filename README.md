@@ -1,7 +1,10 @@
 # 📊 Financial Dashboard API
 
-This project is a **Flask-based backend API** for fetching and analyzing **stock** and **cryptocurrency** data.
-It pulls live data, computes financial metrics, and serves everything as JSON so a **frontend dashboard** can visualize it.
+This project is a **full-stack financial dashboard** with:
+
+* **Backend (Flask)** → Fetches **stock** and **crypto** data, computes KPIs, moving averages, and serves JSON APIs.
+* **Frontend (React + Vite)** → Interactive charts, stock selection, date ranges, and performance summaries.
+
 
 ---
 
@@ -39,30 +42,36 @@ venv\Scripts\activate       # Windows
 pip install -r requirements.txt
 ```
 
-Example `requirements.txt`:
-
-```txt
-flask
-flask-cors
-pandas
-yfinance
-ccxt
-```
-
 ### 4. Run the server
+#### Back end
 
 ```bash
 python app.py
 ```
 
 By default, Flask runs on:
-👉 [http://127.0.0.1:5000](http://127.0.0.1:5000)
+[http://127.0.0.1:5000](http://127.0.0.1:5000)
+
+#### Frontend (React + Vite)
+Open a **second terminal** in the project root:
+
+```bash
+cd financial-dashboard-frontend
+npm install
+npm run dev
+```
+
+The frontend will run at:
+[http://127.0.0.1:5173](http://127.0.0.1:5173)
+
+Make sure **Flask is running** (port 5000), because React fetches data from there.
+
 
 ---
 
-## 🔌 API Endpoints
+## API Endpoints
 
-### 📈 Stock Data
+### Stock Data
 
 ```
 GET /api/stock/<ticker>
@@ -149,12 +158,19 @@ Response example:
 
 ```
 financial_dashboard/
-│── app.py              # Flask API
-│── data_fetcher.py     # Functions to fetch stock/crypto data
-│── analytics.py        # Functions to compute KPIs and indicators
-│── requirements.txt    # Dependencies
-│── README.md           # Documentation (this file)
+│── app.py                   # Flask API
+│── data_fetcher.py          # Fetch stock/crypto data
+│── analytics.py             # Compute KPIs and indicators
+│── requirements.txt         # Python dependencies
+│── README.md                # Documentation (this file)
+│
+└── financial-dashboard-frontend/
+    │── src/
+    │   ├── App.jsx          # React frontend
+    │   └── index.css        # Styling
+    │── package.json         # Node dependencies
 ```
+
 
 ---
 
