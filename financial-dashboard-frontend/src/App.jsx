@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import dayjs from "dayjs"; 
 import {
   LineChart,
   Line,
@@ -17,7 +18,9 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const [selectedFields, setSelectedFields] = useState(["Close"]); // ✅ Default to Close
+  const [selectedFields, setSelectedFields] = useState(["Close"]); //  Default to Close
+  const [dateRange, setDateRange] = useState("1M"); // default = 1 month
+
 
   const stockOptions = ["AAPL", "MSFT", "TSLA", "GOOGL", "AMZN"];
 
@@ -59,6 +62,32 @@ function App() {
     fetchData(ticker);
   }, [ticker]);
 
+  //Data Filtering Logic
+  const getFilteredData = () => {
+    if (!data || data.length === 0) return [];
+
+    const end = dayjs(data[data.length - 1].Date); // last available date
+    let start;
+
+    switch (dateRange) {
+      case "7D":
+        start = end.subtract(7, "day");
+        break;
+      case "1M":
+        start = end.subtract(1, "month");
+        break;
+      case "6M":
+        start = end.subtract(6, "month");
+        break;
+      case "1Y":
+        start = end.subtract(1, "year");
+        break;
+      default:
+        return data; // "ALL"
+    }
+    return data.filter((item) => dayjs(item.Date).isAfter(start));
+  };
+
   return (
     <div style={{ padding: "20px" }}>
       <h1> Financial Dashboard</h1>
@@ -98,15 +127,36 @@ function App() {
           </button>
         ))}
       </div>
+      {/* Date range buttons */}
+      <div style={{ marginBottom: "20px" }}>
+        {["7D", "1M", "6M", "1Y", "ALL"].map((range) => (
+          <button
+            key={range}
+            onClick={() => setDateRange(range)}
+            style={{
+              marginRight: "10px",
+              padding: "8px 12px",
+              borderRadius: "6px",
+              border: dateRange === range ? "2px solid #8884d8" : "1px solid #ccc",
+              background: dateRange === range ? "#eee" : "white",
+              cursor: "pointer",
+            }}
+          >
+            {range}
+          </button>
+        ))}
+      </div>
+
 
       <h2>{ticker} Stock Prices</h2>
+      
 
       {loading && <p>Loading...</p>}
       {error && <p style={{ color: "red" }}>{error}</p>}
 
       {!loading && data.length > 0 && (
         <ResponsiveContainer width="100%" height={400}>
-          <LineChart data={data}>
+          <LineChart data={getFilteredData()}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="Date" />
             <YAxis />
@@ -131,6 +181,8 @@ function App() {
         </ResponsiveContainer>
       )}
     </div>
+    
+    
   );
 }
 
